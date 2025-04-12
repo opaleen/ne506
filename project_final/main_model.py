@@ -3,11 +3,11 @@ This model of Heat Pipe Mirco Reactor is developed by
 Ebny Walid Ahammed and Oliver Paleen.
 ©  All rights reserved
 """
-
 import openmc
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
+
 warnings.filterwarnings("ignore")
 
 
@@ -42,8 +42,6 @@ materials = openmc.Materials(
         boron_carbide,
     ]
 )
-materials.export_to_xml()
-
 
 floor_z_plane = openmc.ZPlane(z0=geom.lower_z_plane)
 roof_z_plane = openmc.ZPlane(z0=geom.upper_z_plane)
@@ -70,19 +68,13 @@ second_plane = openmc.Plane(
 thrid_plane = openmc.YPlane(0)
 
 
-heat_pipe_region = -heat_pipe_ir
-steel_region = -heat_pipe_or & +heat_pipe_ir
-
-
-heat_pipe_graphite_cell = openmc.Cell(
-    4, "heat pipe graphite ", fill=graphite, region=+heat_pipe_or
-)
+heat_pipe_graphite_cell = openmc.Cell(fill=graphite, region=+heat_pipe_or)
 heat_pipe_steel_cell = openmc.Cell(
-    region=steel_region,
+    region=-heat_pipe_or & +heat_pipe_ir,
     fill=stainless_steel,
 )
 
-heat_pipe_fluid_cell = openmc.Cell(region=heat_pipe_region, fill=sodium)
+heat_pipe_fluid_cell = openmc.Cell(region=-heat_pipe_ir, fill=sodium)
 
 
 fuel_12 = openmc.Cell(fill=uranium_12, region=-fuel_or)
@@ -90,6 +82,67 @@ fuel_15 = openmc.Cell(fill=uranium_15, region=-fuel_or)
 fuel_19 = openmc.Cell(fill=uranium_19, region=-fuel_or)
 
 
+core_cylinder = openmc.ZCylinder(r=geom.core_radius, boundary_type="vacuum")
+core_roof = openmc.ZPlane(z0=geom.core_roof, boundary_type="vacuum")
+core_floor = openmc.ZPlane(z0=geom.core_floor, boundary_type="vacuum")
+
+control_rod_cylinder = openmc.ZCylinder(r=geom.control_rod_radius)
+
+
+control_rod_graphite_cell = openmc.Cell(fill=graphite, region=+control_rod_cylinder)
+
+control_rod_cell = openmc.Cell(region=-control_rod_cylinder, fill=boron_carbide)
+
+
+graphite_cell = openmc.Cell(fill=graphite)
+beryllium_cell = openmc.Cell(fill=beryllium)
+
+control_rod = openmc.Universe(cells=[control_rod_cell, control_rod_graphite_cell])
+
+heat_pipe = openmc.Universe(
+    cells=[heat_pipe_fluid_cell, heat_pipe_steel_cell, heat_pipe_graphite_cell]
+)
+
+
+control_drum_inner_reflector_cell = openmc.Cell(
+    region=-control_drum_inner_cylinder
+    | (
+        +control_drum_inner_cylinder
+        & -control_drum_outer_cylinder
+        & -first_plane
+        & +second_plane
+        & +thrid_plane
+    ),
+    fill=beryllium,
+)
+control_drum_absorber_cell = openmc.Cell(
+    region=(
+        (+control_drum_inner_cylinder & -control_drum_outer_cylinder)
+        & ~(
+            +control_drum_inner_cylinder
+            & -control_drum_outer_cylinder
+            & -first_plane
+            & +second_plane
+            & +thrid_plane
+        )
+    ),
+    fill=boron_carbide,
+)
+
+control_drum__outer_reflector_cell = openmc.Cell(
+    region=+control_drum_outer_cylinder, fill=beryllium
+)
+
+control_drum_universe = openmc.Universe(
+    cells=[
+        control_drum_absorber_cell,
+        control_drum_inner_reflector_cell,
+        control_drum__outer_reflector_cell,
+    ]
+)
+
+graphite_universe = openmc.Universe(cells=[graphite_cell])
+beryllium_universe = openmc.Universe(cells=[beryllium_cell])
 fuel_12_rod = openmc.Universe(
     cells=(
         fuel_12,
@@ -116,45 +169,12 @@ fuel_19_rod = openmc.Universe(
 )
 
 
-core_cylinder = openmc.ZCylinder(r=geom.core_radius, boundary_type="vacuum")
-core_roof = openmc.ZPlane(z0=geom.core_roof, boundary_type="vacuum")
-core_floor = openmc.ZPlane(z0=geom.core_floor, boundary_type="vacuum")
-
-control_rod_cylinder = openmc.ZCylinder(r=geom.control_rod_radius)
-
-
-control_rod_graphite_cell = openmc.Cell(fill=graphite, region=+control_rod_cylinder)
-
-control_rod_cell = openmc.Cell(region=-control_rod_cylinder, fill=boron_carbide)
-
-
-graphite_cell = openmc.Cell(fill=graphite)
-beryllium_cell = openmc.Cell(fill=beryllium)
-
-control_rod = openmc.Universe(cells=[control_rod_cell, control_rod_graphite_cell])
-
-heat_pipe = openmc.Universe(
-    cells=[heat_pipe_fluid_cell, heat_pipe_steel_cell, heat_pipe_graphite_cell]
-)
-
-graphite_universe = openmc.Universe(cells=[graphite_cell])
-beryllium_universe = openmc.Universe(cells=[beryllium_cell])
-
 assembly_1 = openmc.HexLattice()
 assembly_1.pitch = geom.assembly_pitch
 assembly_1.outer = graphite_universe
 assembly_1.orientation = "x"
 assembly_1.universes = [[fuel_12_rod, heat_pipe] * 6, [fuel_12_rod] * 6, [control_rod]]
 assembly_1.center = (0.0, 0.0)
-
-
-outer_in_surface = openmc.model.HexagonalPrism(
-    edge_length=geom.assembly_edge_length, orientation="y", boundary_type="vacuum"
-)
-
-assembly_1_cell = openmc.Cell(fill=assembly_1, region=-outer_in_surface)
-out_in_assembly = openmc.Cell(fill=graphite_universe, region=~(-outer_in_surface))
-assembly_1_universe = openmc.Universe(cells=[assembly_1_cell, out_in_assembly])
 
 
 assembly_2 = openmc.HexLattice()
@@ -169,7 +189,7 @@ assembly_3 = openmc.HexLattice()
 assembly_3.pitch = geom.assembly_pitch
 assembly_3.outer = graphite_universe
 assembly_3.orientation = "x"
-assembly_3.universes = [[fuel_12_rod, heat_pipe] * 6, [fuel_12_rod] * 6, [heat_pipe]]
+assembly_3.universes = [[fuel_19_rod, heat_pipe] * 6, [fuel_19_rod] * 6, [heat_pipe]]
 assembly_3.center = (0.0, 0.0)
 
 outer_in_surface = openmc.model.HexagonalPrism(
@@ -225,44 +245,6 @@ cells = [core_cell, out_in_core, beryllium_cell]
 angle_offset_deg = 90.0
 angles_deg = np.linspace(0, 360, geom.number_of_control_drums, endpoint=False)
 
-
-control_drum_inner_reflector_cell = openmc.Cell(
-    region=-control_drum_inner_cylinder
-    | (
-        +control_drum_inner_cylinder
-        & -control_drum_outer_cylinder
-        & -first_plane
-        & +second_plane
-        & +thrid_plane
-    ),
-    fill=beryllium,
-)
-control_drum_absorber_cell = openmc.Cell(
-    region=(
-        (+control_drum_inner_cylinder & -control_drum_outer_cylinder)
-        & ~(
-            +control_drum_inner_cylinder
-            & -control_drum_outer_cylinder
-            & -first_plane
-            & +second_plane
-            & +thrid_plane
-        )
-    ),
-    fill=boron_carbide,
-)
-
-control_drum__outer_reflector_cell = openmc.Cell(
-    region=+control_drum_outer_cylinder, fill=beryllium
-)
-
-control_drum_universe = openmc.Universe(
-    cells=[
-        control_drum_absorber_cell,
-        control_drum_inner_reflector_cell,
-        control_drum__outer_reflector_cell,
-    ]
-)
-
 for i, angle_deg in enumerate(angles_deg):
 
     effective_angle_deg = angle_deg + angle_offset_deg
@@ -287,6 +269,15 @@ core_universe = openmc.Universe(cells=cells)
 
 
 geometry = openmc.Geometry(root=core_universe)
+
+settings_file = openmc.Settings()
+settings_file.batches = batches
+settings_file.inactive = inactive
+settings_file.particles = particles
+
+
+settings_file.export_to_xml()
 geometry.export_to_xml()
+materials.export_to_xml()
 
 openmc.run()
