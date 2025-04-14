@@ -319,6 +319,30 @@ if __name__ == "__main__":
     number_of_iteration = arguments.number_of_iteration
     k_eff_target = arguments.k_eff_target
 
-    openmc.search_for_keff(
-        generate_model, bracket=[10, 100], tol=1e-2, print_iterations=False
-    )
+    k_eff_history = [1]
+    rotation_angle_history = [rotation_angle]
+    delta = 0
+    for i in range(number_of_iteration):
+
+        geometry, materials, settings_file = generate_model(rotation_angle)
+        model = openmc.model.Model(geometry, materials, settings_file)
+        run = model.run(output=False)
+        sp = openmc.StatePoint(run)
+        k_eff_history.append(sp.keff.nominal_value)
+        print(f"k eff = {k_eff_history[-1]:.6f} and the angle is = {rotation_angle}")
+        os.system("rm *.h5")  # i hate that particle lost error
+
+        if np.isclose(k_eff_history[-1], k_eff_target, atol=0.01):
+            break
+
+        if i == 0:
+            rotation_angle -= rotation_step
+        else:
+            rotation_angle = scant_method(
+                theta_current_step=rotation_angle_history[-1],
+                theta_old_step=rotation_angle_history[-2],
+                k_eff_current=k_eff_history[-1],
+                k_eff_old=k_eff_history[-2],
+            )
+
+        rotation_angle_history.append(rotation_angle)
