@@ -132,6 +132,8 @@ def generate_model(control_drum_rotation_angle):
             & -first_plane
             & +second_plane
             & +third_plane
+            & +core_floor
+            & -core_roof
         ),
         fill=beryllium,
     )
@@ -144,6 +146,8 @@ def generate_model(control_drum_rotation_angle):
                 & -first_plane
                 & +second_plane
                 & +third_plane
+                & +core_floor
+                & -core_roof
             )
         ),
         fill=boron_carbide,
@@ -280,9 +284,9 @@ def generate_model(control_drum_rotation_angle):
 
         cylinder = openmc.ZCylinder(x0=x, y0=y, r=geom.outer_radius_of_control_drum)
 
-        outer_berilyium_region &= +cylinder
+        outer_berilyium_region &= +cylinder & +core_floor & -core_roof
 
-        drum_cell = openmc.Cell(region=-cylinder, fill=control_drum_universe)
+        drum_cell = openmc.Cell(region=-cylinder & +core_floor & -core_roof, fill=control_drum_universe)
         drum_cell.translation = (x, y, 0)
         rotated_drum_cell = geom.rotate_control_drum_cell(
             drum_cell,
@@ -305,7 +309,7 @@ def generate_model(control_drum_rotation_angle):
     geometry.export_to_xml()
     materials.export_to_xml()
 
-    return geometry, materials, settings
+    return openmc.model.Model(geometry, materials, settings)
 
 
 if __name__ == "__main__":
