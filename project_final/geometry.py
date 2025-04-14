@@ -3,8 +3,8 @@ import numpy as np
 import scipy as sp
 
 number_of_control_drums = 12
-distance_of_control_drums_from_center = 85
-to_radian = np.pi/180
+distance_of_control_drums_from_center = 86
+to_radian = np.pi / 180
 control_drum_theta = 80
 
 # lower z plane
@@ -19,8 +19,8 @@ stainless_steel_thickness = 0.17
 heat_pipe_outer_radius = heat_pipe_inner_radius + stainless_steel_thickness
 
 # fuel rod
-helium_gas_gap_thickness = 0.01
-cladding_thickness = 0.08
+helium_gas_gap_thickness = 0.04
+cladding_thickness = 0.2
 
 fuel_inner_radius = 1.26
 fuel_gas_radius = fuel_inner_radius + helium_gas_gap_thickness
@@ -32,15 +32,15 @@ assembly_pitch = (3.33,)
 
 # control drum
 inner_radius_control_drum = 5.5
-control_drum_absorber_thickness = 1
+control_drum_absorber_thickness = 2
 outer_radius_of_control_drum = (
     inner_radius_control_drum + control_drum_absorber_thickness
 )
 
 # whole core
-whole_core_diameter = 190
+whole_core_diameter = 200
 core_pitch = (0.336 * 100 * 0.844 / 1.6,)
-core_radius = whole_core_diameter/2
+core_radius = whole_core_diameter / 2
 core_roof = 50.24
 core_floor = -50.24
 
@@ -65,8 +65,7 @@ def plane_from_points(point1, point2):
     return openmc.Plane(a, b, c, d)
 
 
-def rotate_control_drum_cell(control_drum:openmc.Cell, angle):
-
+def rotate_control_drum_cell(control_drum: openmc.Cell, angle):
 
     rotation_matrix = sp.spatial.transform.Rotation.from_euler(
         "z", angle, degrees=True
