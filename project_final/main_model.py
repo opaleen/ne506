@@ -3,6 +3,7 @@ This model of Heat Pipe Mirco Reactor is developed by
 Ebny Walid Ahammed and Oliver Paleen.
 ©  All rights reserved
 """
+
 import openmc
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,6 +14,7 @@ import os
 from materials import *
 import geometry as geom
 from settings import *
+from drum_rotation_algorithm import scant_method
 
 warnings.filterwarnings("ignore")
 
@@ -39,12 +41,14 @@ def parse_arguments():
         default=1,
         help="rotation step in each iteration ",
     )
+    parser.add_argument(
+        "--k_eff_target", type=float, default=1, help="target k_eff for the simulation"
+    )
 
     return parser.parse_args()
 
 
-def generate_model(rotation_angle):
-
+def generate_model(control_drum_rotation_angle):
     sodium = make_material(material_dict["sodium"], percent_type="ao")
     uranium_15 = make_material(material_dict["uranium_15_percent"], percent_type="ao")
     uranium_19 = make_material(material_dict["uranium_19_percent"], percent_type="ao")
@@ -122,25 +126,25 @@ def generate_model(rotation_angle):
 
     control_drum_inner_reflector_cell = openmc.Cell(
         region=-control_drum_inner_cylinder
-               | (
-                       +control_drum_inner_cylinder
-                       & -control_drum_outer_cylinder
-                       & -first_plane
-                       & +second_plane
-                       & +third_plane
-               ),
+        | (
+            +control_drum_inner_cylinder
+            & -control_drum_outer_cylinder
+            & -first_plane
+            & +second_plane
+            & +third_plane
+        ),
         fill=beryllium,
     )
     control_drum_absorber_cell = openmc.Cell(
         region=(
-                (+control_drum_inner_cylinder & -control_drum_outer_cylinder)
-                & ~(
+            (+control_drum_inner_cylinder & -control_drum_outer_cylinder)
+            & ~(
                 +control_drum_inner_cylinder
                 & -control_drum_outer_cylinder
                 & -first_plane
                 & +second_plane
                 & +third_plane
-        )
+            )
         ),
         fill=boron_carbide,
     )
@@ -258,7 +262,7 @@ def generate_model(rotation_angle):
     )
 
     outer_berilyium_region = (
-            -core_cylinder & +core_outer_in_surface & +core_floor & -core_roof
+        -core_cylinder & +core_outer_in_surface & +core_floor & -core_roof
     )
     beryllium_cell = openmc.Cell(region=outer_berilyium_region, fill=beryllium)
 
@@ -281,7 +285,8 @@ def generate_model(rotation_angle):
         drum_cell = openmc.Cell(region=-cylinder, fill=control_drum_universe)
         drum_cell.translation = (x, y, 0)
         rotated_drum_cell = geom.rotate_control_drum_cell(
-            drum_cell, (-i + rotation_angle) * (360 / geom.number_of_control_drums)
+            drum_cell,
+            (-i + control_drum_rotation_angle) * (360 / geom.number_of_control_drums),
         )
 
         cells.append(rotated_drum_cell)
@@ -308,8 +313,10 @@ if __name__ == "__main__":
     rotation_angle = arguments.rotation_angle
     rotation_step = arguments.rotation_step
     number_of_iteration = arguments.number_of_iteration
+    k_eff_target = arguments.k_eff_target
 
     k_eff_history = [1]
+    rotation_angle_history = [rotation_angle]
     delta = 0
     for i in range(number_of_iteration):
 
@@ -318,20 +325,20 @@ if __name__ == "__main__":
         run = model.run(output=False)
         sp = openmc.StatePoint(run)
         k_eff_history.append(sp.keff.nominal_value)
+        print(f"k eff = {k_eff_history[-1]:.6f}")
         os.system("rm *.h5")  # i hate that particle lost error
 
-        if np.isclose(k_eff_history[-1], 1, atol=0.01):
+        if np.isclose(k_eff_history[-1] - k_eff_target, atol=0.01):
             break
-        elif k_eff_history[-1] - k_eff_history[-2] > 0:
-            # higher than 1
-            rotation_angle -= rotation_step + i
-            print(
-                f"\nIteration {i + 1}: k_eff increased, rotating {rotation_step + i} degrees counterclockwise. rotation_angle {rotation_angle}\n"
-            )
+
+        if i == 0:
+            rotation_angle -= rotation_step
         else:
-            rotation_angle += rotation_step + i
-            print(
-                f"\nIteration {i + 1}: k_eff decreased, rotating {rotation_step + i} degrees clockwise. rotation_angle {rotation_angle}\n"
+            rotation_angle = scant_method(
+                theta_current_step=rotation_angle_history[-1],
+                theta_old_step=rotation_angle_history[-1],
+                k_eff_current=k_eff_history[-1],
+                k_eff_old=k_eff_history[-2],
             )
 
-        print(f"\nk_eff = {k_eff_history[-1]:.5f}")
+        rotation_angle_history.append(rotation_angle)
