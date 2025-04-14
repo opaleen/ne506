@@ -37,7 +37,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--number_of_iteration",
-        type=float,
+        type=int,
         default=1,
         help="rotation step in each iteration ",
     )
@@ -325,10 +325,10 @@ if __name__ == "__main__":
         run = model.run(output=False)
         sp = openmc.StatePoint(run)
         k_eff_history.append(sp.keff.nominal_value)
-        print(f"k eff = {k_eff_history[-1]:.6f}")
+        print(f"k eff = {k_eff_history[-1]:.6f} and the angle is = {rotation_angle}")
         os.system("rm *.h5")  # i hate that particle lost error
 
-        if np.isclose(k_eff_history[-1] - k_eff_target, atol=0.01):
+        if np.isclose(k_eff_history[-1], k_eff_target, atol=0.01):
             break
 
         if i == 0:
@@ -336,7 +336,7 @@ if __name__ == "__main__":
         else:
             rotation_angle = scant_method(
                 theta_current_step=rotation_angle_history[-1],
-                theta_old_step=rotation_angle_history[-1],
+                theta_old_step=rotation_angle_history[-2],
                 k_eff_current=k_eff_history[-1],
                 k_eff_old=k_eff_history[-2],
             )
