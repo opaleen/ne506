@@ -132,6 +132,8 @@ def generate_model(control_drum_rotation_angle):
             & -first_plane
             & +second_plane
             & +third_plane
+            & +core_floor
+            & -core_roof
         ),
         fill=beryllium,
     )
@@ -144,6 +146,8 @@ def generate_model(control_drum_rotation_angle):
                 & -first_plane
                 & +second_plane
                 & +third_plane
+                & +core_floor
+                & -core_roof
             )
         ),
         fill=boron_carbide,
@@ -280,9 +284,9 @@ def generate_model(control_drum_rotation_angle):
 
         cylinder = openmc.ZCylinder(x0=x, y0=y, r=geom.outer_radius_of_control_drum)
 
-        outer_berilyium_region &= +cylinder
+        outer_berilyium_region &= +cylinder & +core_floor & -core_roof
 
-        drum_cell = openmc.Cell(region=-cylinder, fill=control_drum_universe)
+        drum_cell = openmc.Cell(region=-cylinder & +core_floor & -core_roof, fill=control_drum_universe)
         drum_cell.translation = (x, y, 0)
         rotated_drum_cell = geom.rotate_control_drum_cell(
             drum_cell,
@@ -305,7 +309,7 @@ def generate_model(control_drum_rotation_angle):
     geometry.export_to_xml()
     materials.export_to_xml()
 
-    return geometry, materials, settings
+    return openmc.model.Model(geometry, materials, settings)
 
 
 if __name__ == "__main__":
@@ -315,30 +319,6 @@ if __name__ == "__main__":
     number_of_iteration = arguments.number_of_iteration
     k_eff_target = arguments.k_eff_target
 
-    k_eff_history = [1]
-    rotation_angle_history = [rotation_angle]
-    delta = 0
-    for i in range(number_of_iteration):
-
-        geometry, materials, settings_file = generate_model(rotation_angle)
-        model = openmc.model.Model(geometry, materials, settings_file)
-        run = model.run(output=False)
-        sp = openmc.StatePoint(run)
-        k_eff_history.append(sp.keff.nominal_value)
-        print(f"k eff = {k_eff_history[-1]:.6f} and the angle is = {rotation_angle}")
-        os.system("rm *.h5")  # i hate that particle lost error
-
-        if np.isclose(k_eff_history[-1], k_eff_target, atol=0.01):
-            break
-
-        if i == 0:
-            rotation_angle -= rotation_step
-        else:
-            rotation_angle = scant_method(
-                theta_current_step=rotation_angle_history[-1],
-                theta_old_step=rotation_angle_history[-2],
-                k_eff_current=k_eff_history[-1],
-                k_eff_old=k_eff_history[-2],
-            )
-
-        rotation_angle_history.append(rotation_angle)
+    openmc.search_for_keff(
+        generate_model, bracket=[10, 100], tol=1e-2, print_iterations=False
+    )
