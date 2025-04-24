@@ -24,31 +24,28 @@ def parse_arguments():
         description=" Input settings of control drum rotation problem"
     )
     parser.add_argument(
-        "--rotation_angle",
-        type=float,
-        default=0,
-        help="rotation angle of the control drums",
-    )
-    parser.add_argument(
-        "--rotation_step",
-        type=float,
-        default=3,
-        help="rotation step in each iteration ",
-    )
-    parser.add_argument(
-        "--number_of_iteration",
-        type=int,
-        default=1,
-        help="rotation step in each iteration ",
-    )
-    parser.add_argument(
         "--k_eff_target", type=float, default=1, help="target k_eff for the simulation"
     )
 
     return parser.parse_args()
 
 
-def generate_model(control_drum_rotation_angle):
+def generate_model(control_drum_rotation_angle_list):
+
+    if np.array(control_drum_rotation_angle_list).all() == None:
+
+        warnings.warn(
+            "Running the default model with no rotation as,",
+            "you didn't provide any value or list for drum rotation\n",
+        )
+        control_drum_rotation_angle_list = [0] * geom.number_of_control_drums
+
+    if len(control_drum_rotation_angle_list) != geom.number_of_control_drums:
+
+        raise AttributeError(
+            f"size of control_drum_rotation_angle_list needs to be = {geom.number_of_control_drums}"
+        )
+
     sodium = make_material(material_dict["sodium"], percent_type="ao")
     uranium_15 = make_material(material_dict["uranium_15_percent"], percent_type="ao")
     uranium_19 = make_material(material_dict["uranium_19_percent"], percent_type="ao")
@@ -106,7 +103,7 @@ def generate_model(control_drum_rotation_angle):
     fuel_19 = openmc.Cell(fill=uranium_19, region=-fuel_or)
 
     core_cylinder = openmc.ZCylinder(r=geom.core_radius, boundary_type="vacuum")
-    core_roof = openmc.ZPlane(z0=geom.core_roof, boundary_type="vacuum")
+    core_roof = openmc.ZPlane(z0=geom.core_roof, boundary_type="reflective")
     core_floor = openmc.ZPlane(z0=geom.core_floor, boundary_type="vacuum")
 
     control_rod_cylinder = openmc.ZCylinder(r=geom.control_rod_radius)
@@ -255,7 +252,7 @@ def generate_model(control_drum_rotation_angle):
     ]
 
     core_outer_in_surface = openmc.model.HexagonalPrism(
-        edge_length=geom.assembly_edge_length * 7.5, orientation="y"
+        edge_length=geom.assembly_edge_length * 7, orientation="y"
     )
     core_cell = openmc.Cell(
         fill=core, region=-core_outer_in_surface & +core_floor & -core_roof
@@ -273,9 +270,12 @@ def generate_model(control_drum_rotation_angle):
     cells = [core_cell, out_in_core, beryllium_cell]
 
     angle_offset_deg = 90.0
-    angles_deg = np.linspace(0, 360, geom.number_of_control_drums, endpoint=False)
+    angles_deg = np.linspace(
+        0, 360, geom.number_of_control_drums, endpoint=False
+    )  # center of control drums
 
     for i, angle_deg in enumerate(angles_deg):
+
         effective_angle_deg = angle_deg + angle_offset_deg
         effective_angle_rad = effective_angle_deg * geom.to_radian
 
@@ -286,11 +286,16 @@ def generate_model(control_drum_rotation_angle):
 
         outer_berilyium_region &= +cylinder & +core_floor & -core_roof
 
-        drum_cell = openmc.Cell(region=-cylinder & +core_floor & -core_roof, fill=control_drum_universe)
+        drum_cell = openmc.Cell(
+            region=-cylinder & +core_floor & -core_roof, fill=control_drum_universe
+        )
         drum_cell.translation = (x, y, 0)
         rotated_drum_cell = geom.rotate_control_drum_cell(
             drum_cell,
-            (-i + control_drum_rotation_angle) * (360 / geom.number_of_control_drums),
+            (
+                -i * (360 / geom.number_of_control_drums)
+                + control_drum_rotation_angle_list[i]
+            ),
         )
 
         cells.append(rotated_drum_cell)
@@ -312,37 +317,5 @@ def generate_model(control_drum_rotation_angle):
     return openmc.model.Model(geometry, materials, settings)
 
 
-if __name__ == "__main__":
-    arguments = parse_arguments()
-    rotation_angle = arguments.rotation_angle
-    rotation_step = arguments.rotation_step
-    number_of_iteration = arguments.number_of_iteration
-    k_eff_target = arguments.k_eff_target
-
-    k_eff_history = [1]
-    rotation_angle_history = [rotation_angle]
-    delta = 0
-    for i in range(number_of_iteration):
-
-        geometry, materials, settings_file = generate_model(rotation_angle)
-        model = openmc.model.Model(geometry, materials, settings_file)
-        run = model.run(output=False)
-        sp = openmc.StatePoint(run)
-        k_eff_history.append(sp.keff.nominal_value)
-        print(f"k eff = {k_eff_history[-1]:.6f} and the angle is = {rotation_angle}")
-        os.system("rm *.h5")  # i hate that particle lost error
-
-        if np.isclose(k_eff_history[-1], k_eff_target, atol=0.01):
-            break
-
-        if i == 0:
-            rotation_angle -= rotation_step
-        else:
-            rotation_angle = scant_method(
-                theta_current_step=rotation_angle_history[-1],
-                theta_old_step=rotation_angle_history[-2],
-                k_eff_current=k_eff_history[-1],
-                k_eff_old=k_eff_history[-2],
-            )
-
-        rotation_angle_history.append(rotation_angle)
+if __name__ == "main":
+    pass

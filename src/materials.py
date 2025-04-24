@@ -2,15 +2,10 @@ import openmc
 
 
 material_dict = {
-    'sodium': {
-        'density': 0.927,  # g/cm3 at 400°C
-        'composition': {
-            "Na23": 1.0
-        }
-    },
-    'stainless_steel': {
-        'density': 7.9,
-        'composition': {
+    "sodium": {"density": 0.927, "composition": {"Na23": 1.0}},  # g/cm3 at 400°C
+    "stainless_steel": {
+        "density": 7.9,
+        "composition": {
             "Fe54": 0.035405,
             "Fe56": 0.555685,
             "Fe57": 0.01283,
@@ -28,12 +23,12 @@ material_dict = {
             "Si28": 0.01,
             "Si29": 0.0005,
             "Si30": 0.00033,
-            "C12": 0.001
-        }
+            "C12": 0.001,
+        },
     },
-    'zircalloy': {
-        'density': 6.56,
-        'composition': {
+    "zircalloy": {
+        "density": 6.56,
+        "composition": {
             "Zr90": 0.5145,
             "Zr91": 0.1122,
             "Zr92": 0.1715,
@@ -56,66 +51,36 @@ material_dict = {
             "Cr50": 0.0002,
             "Cr52": 0.0039,
             "Cr53": 0.0004,
-            "Cr54": 0.0001
-        }
+            "Cr54": 0.0001,
+        },
     },
-    'helium': {
-        'density': 0.0001785,  # g/cm3 at STP
-        'composition': {
-            "He4": 1.0
-        }
+    "helium": {"density": 0.0001785, "composition": {"He4": 1.0}},  # g/cm3 at STP
+    "uranium_12_percent": {
+        "density": 10.5,
+        "composition": {"U235": 0.12, "U238": 0.88},
     },
-    'uranium_12_percent': {
-        'density': 10.5,
-        'composition': {
-            "U235": 0.12,
-            "U238": 0.88
-        }
+    "uranium_15_percent": {
+        "density": 10.5,
+        "composition": {"U235": 0.15, "U238": 0.85},
     },
-    'uranium_15_percent': {
-        'density': 10.5,
-        'composition': {
-            "U235": 0.15,
-            "U238": 0.85
-        }
+    "uranium_19_percent": {
+        "density": 10.5,
+        "composition": {"U235": 0.1975, "U238": 0.8025},
     },
-    'uranium_19_percent': {
-        'density': 10.5,
-        'composition': {
-            "U235": 0.1975,
-            "U238": 0.8025
-        }
+    "graphite": {"density": 1.7, "composition": {"C12": 1.0}},  # Natural carbon
+    "beryllium": {"density": 1.85, "composition": {"Be9": 1.0}},
+    "boron_carbide": {
+        "density": 2.52,
+        "composition": {"B10": 0.199, "B11": 0.801, "C12": 1.0},  # Natural carbon
     },
-    'graphite': {
-        'density': 1.7,
-        'composition': {
-            "C12": 1.0  # Natural carbon
-        }
-    },
-    'beryllium': {
-        'density': 1.85,
-        'composition': {
-            "Be9": 1.0
-        }
-    },
-    'boron_carbide': {
-        'density': 2.52,
-        'composition': {
-            "B10": 0.199,
-            "B11": 0.801,
-            "C12": 1.0  # Natural carbon
-        }
-    }
 }
 
 
 def make_material(material_dict, percent_type: str):
     material = openmc.Material()
-    material.set_density('g/cm3', material_dict['density'])
+    material.set_density("g/cm3", material_dict["density"])
 
-    for nuclide, percent in material_dict['composition'].items():
-        material.add_nuclide(
-            nuclide, percent=percent, percent_type=percent_type
-        )
+    for nuclide, percent in material_dict["composition"].items():
+        material.add_nuclide(nuclide, percent=percent, percent_type=percent_type)
 
     return material
