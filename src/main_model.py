@@ -30,9 +30,9 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def generate_model(control_drum_rotation_angle_list):
+def generate_model(value):
 
-    if np.array(control_drum_rotation_angle_list).all() == None:
+    """    if np.array(control_drum_rotation_angle_list).all() == None:
 
         warnings.warn(
             "Running the default model with no rotation as,",
@@ -44,7 +44,8 @@ def generate_model(control_drum_rotation_angle_list):
 
         raise AttributeError(
             f"size of control_drum_rotation_angle_list needs to be = {geom.number_of_control_drums}"
-        )
+        )"""
+    control_drum_rotation_angle_list = np.ones(geom.number_of_control_drums)* value
 
     sodium = make_material(material_dict["sodium"], percent_type="ao")
     uranium_15 = make_material(material_dict["uranium_15_percent"], percent_type="ao")
@@ -103,7 +104,7 @@ def generate_model(control_drum_rotation_angle_list):
     fuel_19 = openmc.Cell(fill=uranium_19, region=-fuel_or)
 
     core_cylinder = openmc.ZCylinder(r=geom.core_radius, boundary_type="vacuum")
-    core_roof = openmc.ZPlane(z0=geom.core_roof, boundary_type="reflective")
+    core_roof = openmc.ZPlane(z0=geom.core_roof, boundary_type="vacuum")
     core_floor = openmc.ZPlane(z0=geom.core_floor, boundary_type="vacuum")
 
     control_rod_cylinder = openmc.ZCylinder(r=geom.control_rod_radius)

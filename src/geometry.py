@@ -3,7 +3,7 @@ import numpy as np
 import scipy as sp
 
 number_of_control_drums = 12
-distance_of_control_drums_from_center = 86
+distance_of_control_drums_from_center = 80
 to_radian = np.pi / 180
 control_drum_theta = 80
 

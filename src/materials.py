@@ -70,7 +70,7 @@ material_dict = {
     "graphite": {"density": 1.7, "composition": {"C12": 1.0}},  # Natural carbon
     "beryllium": {"density": 1.85, "composition": {"Be9": 1.0}},
     "boron_carbide": {
-        "density": 2.52,
+        "density": 4.52,
         "composition": {"B10": 0.199, "B11": 0.801, "C12": 1.0},  # Natural carbon
     },
 }
