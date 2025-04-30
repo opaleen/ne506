@@ -1,3 +1,3 @@
-batches = 100
-inactive = 10
-particles = 5000
+batches = 20
+inactive = 5
+particles = 10000
