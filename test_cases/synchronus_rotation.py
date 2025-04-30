@@ -28,4 +28,5 @@ def synchronus_rotation():
     plt.show()
 
 
-synchronus_rotation()
+if __name__ == "__main__":
+    synchronus_rotation()

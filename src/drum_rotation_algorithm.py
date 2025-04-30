@@ -8,13 +8,12 @@ def scant_method(theta_current_step, theta_old_step, k_eff_current, k_eff_old):
     return theta_new
 
 
-def iterative_method(k_eff_current, k_eff_old, rotation_angle, rotation_step):
-    if np.isclose(k_eff_current, 1, atol=0.01):
-        rotation_angle = 0
-    elif k_eff_current - k_eff_old > 0:
-        rotation_angle -= rotation_step
-
+def  feed_back_rotation(k_eff_diff,
+                        last_rotation_angle,
+                        rotation_step ):
+    if k_eff_diff > 0:
+        last_rotation_angle -= rotation_step
     else:
-        rotation_angle += rotation_step
+        last_rotation_angle += rotation_step
 
-    return rotation_angle
+    return last_rotation_angle
