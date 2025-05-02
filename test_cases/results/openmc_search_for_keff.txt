@@ -1,0 +1,15 @@
+ebny_walid@magnox:~/Documents/github/ne506/test_cases (more_test_cases) $ python synchronus_rotation_openmc_search_for_keff.py 
+Iteration: 1; Guess of -6.00e+01 produced a keff of 0.99715 +/- 0.00283
+Iteration: 2; Guess of 6.00e+01 produced a keff of 1.00318 +/- 0.00213
+Iteration: 3; Guess of 0.00e+00 produced a keff of 0.99814 +/- 0.00165
+Iteration: 4; Guess of 3.00e+01 produced a keff of 0.99880 +/- 0.00205
+Iteration: 5; Guess of 4.50e+01 produced a keff of 0.99791 +/- 0.00359
+Iteration: 6; Guess of 5.25e+01 produced a keff of 0.99482 +/- 0.00302
+Iteration: 7; Guess of 5.62e+01 produced a keff of 0.99601 +/- 0.00261
+Iteration: 8; Guess of 5.81e+01 produced a keff of 0.99985 +/- 0.00240
+Iteration: 9; Guess of 5.91e+01 produced a keff of 0.99570 +/- 0.00280
+Iteration: 10; Guess of 5.95e+01 produced a keff of 0.99603 +/- 0.00173
+Iteration: 11; Guess of 5.98e+01 produced a keff of 1.00298 +/- 0.00234
+Iteration: 12; Guess of 5.96e+01 produced a keff of 1.00083 +/- 0.00137
+Iteration: 13; Guess of 5.96e+01 produced a keff of 0.99518 +/- 0.00177
+
