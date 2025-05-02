@@ -28,8 +28,8 @@ def main():
     args = parse_arguments()
     k_eff_target = args.k_eff_target
     max_iterations = 20
-    rotation_step = 1.0
-    last_direction = 1
+    rotation_step = 5.0
+    last_direction = -1
     rotation_angle = 0 #initial
     angles = []
     k_effs = []
@@ -40,25 +40,25 @@ def main():
         run = model.run(output=False)
 
         current_k_eff = openmc.StatePoint(run).keff.nominal_value
-        k_eff_diff = current_k_eff - k_eff_target
-
+        k_eff_diff =   k_eff_target -current_k_eff
+        k_effs.append(current_k_eff)
+        angles.append(rotation_angle)
         log_book(rotation_angle, current_k_eff, abs(k_eff_diff), "feed_back_iteration")
 
-        rotation_angle, last_direction = feed_back_rotation(
+        rotation_angle, last_direction , rotation_step = feed_back_rotation(
             k_eff_diff,
             rotation_angle,
             last_direction,
-            rotation_step
+            rotation_step,
+            history = angles
         )
-
-        if rotation_angle in angles:
-            rotation_angle *= np.random.uniform(0.9, 1.1)
 
         if np.isclose(current_k_eff, k_eff_target, atol=0.0009):
             print(f"Converged at iteration {i+1}")
+            print(f"Iteration {i+1}: k_eff={current_k_eff:.6f}, angle={angles[-1]:.6f}")
             break
 
-        print(f"Iteration {i+1}: k_eff={current_k_eff:.6f}, angle={rotation_angle:.6f}")
+        print(f"Iteration {i+1}: k_eff={current_k_eff:.6f}, angle={angles[-1]:.6f}")
 
 if __name__ == "__main__":
     main()

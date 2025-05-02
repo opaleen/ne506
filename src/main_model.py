@@ -14,7 +14,6 @@ import os
 from materials import *
 import geometry as geom
 from settings import *
-from drum_rotation_algorithm import scant_method
 
 warnings.filterwarnings("ignore")
 
