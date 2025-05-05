@@ -29,9 +29,15 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def generate_model(value):
+def generate_model(control_drum_rotation_angle_list):
+    
+    if len(control_drum_rotation_angle_list) != geom.number_of_control_drums or np.isscalar(control_drum_rotation_angle_list):
 
-    control_drum_rotation_angle_list = np.ones(geom.number_of_control_drums) * value
+        raise AttributeError(
+            f"size of control_drum_rotation_angle_list needs to be = {geom.number_of_control_drums} or "
+            f"one single scalar value."
+        )
+    control_drum_rotation_angle_list = np.ones(geom.number_of_control_drums) * control_drum_rotation_angle_list
 
     sodium = make_material(material_dict["sodium"], percent_type="ao")
     uranium_15 = make_material(material_dict["uranium_15_percent"], percent_type="ao")
