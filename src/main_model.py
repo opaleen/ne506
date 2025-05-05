@@ -30,19 +30,7 @@ def parse_arguments():
 
 
 def generate_model(value):
-    """if np.array(control_drum_rotation_angle_list).all() == None:
 
-        warnings.warn(
-            "Running the default model with no rotation as,",
-            "you didn't provide any value or list for drum rotation\n",
-        )
-        control_drum_rotation_angle_list = [0] * geom.number_of_control_drums
-
-    if len(control_drum_rotation_angle_list) != geom.number_of_control_drums:
-
-        raise AttributeError(
-            f"size of control_drum_rotation_angle_list needs to be = {geom.number_of_control_drums}"
-        )"""
     control_drum_rotation_angle_list = np.ones(geom.number_of_control_drums) * value
 
     sodium = make_material(material_dict["sodium"], percent_type="ao")
@@ -102,7 +90,7 @@ def generate_model(value):
     fuel_19 = openmc.Cell(fill=uranium_19, region=-fuel_or)
 
     core_cylinder = openmc.ZCylinder(r=geom.core_radius, boundary_type="vacuum")
-    core_roof = openmc.ZPlane(z0=geom.core_roof, boundary_type="vacuum")
+    core_roof = openmc.ZPlane(z0=geom.core_roof, boundary_type="reflective")
     core_floor = openmc.ZPlane(z0=geom.core_floor, boundary_type="vacuum")
 
     control_rod_cylinder = openmc.ZCylinder(r=geom.control_rod_radius)
@@ -307,8 +295,6 @@ def generate_model(value):
     settings.batches = batches
     settings.inactive = inactive
     settings.particles = particles
-    settings.max_lost_particles = 500
-
     settings.export_to_xml()
     geometry.export_to_xml()
     materials.export_to_xml()
